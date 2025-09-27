@@ -87,8 +87,8 @@ export default function QRGenerator() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const { typeNumber, mode, errorCorrectionLevel } = config.qrOptions;
-      const qrOptions: any = {
+      const { typeNumber, errorCorrectionLevel } = config.qrOptions;
+      const qrOptions: Partial<QRConfig['qrOptions']> = {
         mode: 'Byte',
         errorCorrectionLevel,
       };
@@ -182,18 +182,13 @@ export default function QRGenerator() {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
+    } catch {
       setErrorMsg('Failed to copy text.');
       setTimeout(() => setErrorMsg(''), 2500);
     }
   };
 
-  const updateConfig = <K extends keyof QRConfig, V extends QRConfig[K]>(key: K, value: V) => {
-    setConfig(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
+  // updateConfig removed (was unused) — use updateNestedConfig for nested updates
 
   const updateNestedConfig = <K extends keyof QRConfig, CK extends keyof QRConfig[K], V extends QRConfig[K][CK]>(parentKey: K, childKey: CK, value: V) => {
     setConfig(prev => ({
@@ -207,11 +202,11 @@ export default function QRGenerator() {
 
   const colorSchemes = [
     { name: 'Classic', dot: '#000000', bg: '#ffffff' },
-    { name: 'Emerald', dot: '#10b981', bg: '#ecfdf5' },
-    { name: 'Forest', dot: '#059669', bg: '#f0fdf4' },
+  { name: 'Emerald', dot: '#8b5cf6', bg: '#f5f3ff' },
+  { name: 'Forest', dot: '#7c3aed', bg: '#f8f3ff' },
     { name: 'Ocean', dot: '#0ea5e9', bg: '#f0f9ff' },
     { name: 'Sunset', dot: '#f59e0b', bg: '#fffbeb' },
-    { name: 'Dark', dot: '#10b981', bg: '#1f2937' },
+  { name: 'Dark', dot: '#7c3aed', bg: '#1f2937' },
   ];
 
   const dotTypes = [
@@ -281,7 +276,7 @@ export default function QRGenerator() {
                       value={text}
                       onChange={(e) => setText(e.target.value)}
                       placeholder="Enter URL, text, email, phone number, etc..."
-                      className="w-full h-32 p-4 bg-gray-700/50 border border-gray-600 rounded-xl resize-none placeholder-gray-400 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-300 text-white"
+                      className="w-full h-32 p-4 bg-gray-700/50 border border-gray-600 rounded-xl resize-none placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white"
                     />
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-sm text-gray-400">

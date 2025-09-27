@@ -1,7 +1,7 @@
 "use client";
-import { AnimatePresence, motion, useAnimation } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import SleekFooter from './components/Footer';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { 
   QrCode, Github, Zap, Sparkles, Palette, Scan, Shield, Infinity, ChevronDown, Camera
 } from 'lucide-react';
@@ -19,7 +19,7 @@ export default function Home() {
       icon: Scan,
       title: "Advanced Scanning",
       description: "Camera & image upload scanning with instant results",
-      gradient: "from-green-500 to-blue-500"
+      gradient: "from-purple-500 to-blue-500"
     },
     {
       icon: Zap,
@@ -81,76 +81,7 @@ export default function Home() {
     { number: "0", label: "Cost" }
   ];
 
-  function AccordionItem({ faq, index, openFaq, setOpenFaq }: { faq: { question: string; answer: string }; index: number; openFaq: number | null; setOpenFaq: React.Dispatch<React.SetStateAction<number | null>> }) {
-    const contentRef = useRef<HTMLDivElement>(null);
-    const controls = useAnimation();
-    const [contentHeight, setContentHeight] = useState(0);
-
-    const isOpen = openFaq === index;
-
-    useEffect(() => {
-      if (contentRef.current) {
-        setContentHeight(contentRef.current.scrollHeight);
-      }
-    }, [faq.answer]);
-
-    useEffect(() => {
-      if (isOpen) {
-        controls.start({
-          height: contentHeight,
-          opacity: 1,
-          transition: {
-            height: { duration: 0.4, ease: [0.4, 0, 0.2, 1] },
-            opacity: { duration: 0.3, ease: "easeOut", delay: 0.1 }
-          }
-        });
-      } else {
-        controls.start({
-          height: 0,
-          opacity: 0,
-          transition: {
-            height: { duration: 0.5, ease: [0.4, 0, 0.2, 1] },
-            opacity: { duration: 0.4, ease: "easeOut" }
-          }
-        });
-      }
-    }, [isOpen, contentHeight, controls]);
-
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
-        className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl overflow-hidden"
-      >
-        <motion.button
-          whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.05)" }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => setOpenFaq(isOpen ? null : index)}
-          className="w-full px-6 py-4 text-left flex items-center justify-between transition-colors duration-200"
-        >
-          <span className="text-lg font-semibold text-white pr-4">{faq.question}</span>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            <ChevronDown className="w-5 h-5 text-white/60" />
-          </motion.div>
-        </motion.button>
-
-        <motion.div
-          animate={controls}
-          initial={{ height: 0, opacity: 0 }}
-          className="overflow-hidden"
-          style={{ height: 0 }} // Initial state
-        >
-          <div ref={contentRef} className="px-6 pb-4">
-            <p className="text-white/70 leading-relaxed">{faq.answer}</p>
-          </div>
-        </motion.div>
-      </motion.div>
-    );
-  }
+  // AccordionItem removed in favor of SimpleAccordionItem (simpler animation)
 
   function SimpleAccordionItem({ faq, index, openFaq, setOpenFaq }: { faq: { question: string; answer: string }; index: number; openFaq: number | null; setOpenFaq: React.Dispatch<React.SetStateAction<number | null>> }) {
     const isOpen = openFaq === index;

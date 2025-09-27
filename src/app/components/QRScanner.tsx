@@ -11,14 +11,13 @@ import {
 export default function QRScanner() {
   const [scanningMode, setScanningMode] = useState<'camera' | 'image'>('camera');
   const [isDragActive, setIsDragActive] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const [videoInputDevices, setVideoInputDevices] = useState<MediaDeviceInfo[]>([]);
   const [scanResult, setScanResult] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [error, setError] = useState('');
-  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [_cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -29,8 +28,7 @@ export default function QRScanner() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-    codeReaderRef.current = new BrowserMultiFormatReader();
+  codeReaderRef.current = new BrowserMultiFormatReader();
     checkCameraPermission();
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -99,26 +97,7 @@ export default function QRScanner() {
     }
   };
 
-  const requestCameraPermission = async () => {
-    try {
-      setError('');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined } 
-      });
-      stream.getTracks().forEach(track => track.stop());
-      setCameraPermission('granted');
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
-      setVideoInputDevices(videoDevices);
-      
-      if (videoDevices.length > 0 && !selectedDeviceId) {
-        setSelectedDeviceId(videoDevices[0].deviceId);
-      }
-    } catch {
-      setCameraPermission('denied');
-      setError('Camera access was denied.');
-    }
-  };
+  // requestCameraPermission removed (not used) — camera permission handled in checkCameraPermission/startVideo
 
   const startVideo = async () => {
     if (!selectedDeviceId && videoInputDevices.length > 0) {
@@ -182,7 +161,12 @@ export default function QRScanner() {
   const stopScanning = () => {
     if (codeReaderRef.current) {
       try {
-        (codeReaderRef.current as any).reset();
+        // BrowserMultiFormatReader may expose reset(); avoid 'any' by using a local type
+        type ReaderWithReset = BrowserMultiFormatReader & { reset?: () => void };
+        const reader = codeReaderRef.current as ReaderWithReset;
+        if (typeof reader.reset === 'function') {
+          reader.reset();
+        }
       } catch {}
     }
     setIsScanning(false);
@@ -321,7 +305,7 @@ export default function QRScanner() {
                         <li
                           key={device.deviceId}
                           onClick={() => handleDeviceSelect(device.deviceId)}
-                          className="px-4 py-2 text-white/80 hover:bg-green-600/20 cursor-pointer"
+                          className="px-4 py-2 text-white/80 hover:bg-purple-600/20 cursor-pointer"
                         >
                           {device.label}
                         </li>
@@ -349,7 +333,7 @@ export default function QRScanner() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startVideo}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
                   >
                     <Play className="w-5 h-5" />
                     Start Camera
@@ -359,7 +343,7 @@ export default function QRScanner() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={startCameraScan}
-                    className="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
                   >
                     <Scan className="w-5 h-5" />
                     Start Scan

@@ -31,16 +31,25 @@ export default function AdvancedProtection() {
 
       protectConsole: () => {
         if (typeof console !== 'undefined') {
-          const methods = ['log', 'warn', 'error', 'info', 'debug', 'table'];
-          methods.forEach(method => {
-            console[method] = function() {};
-          });
-        }
+            // assign known console methods explicitly to satisfy TypeScript
+            console.log = function() {};
+            console.warn = function() {};
+            console.error = function() {};
+            console.info = function() {};
+            console.debug = function() {};
+            // console.table may not be present in all environments but assign if available
+            try { console.table = console.table || function() {}; } catch {}
+          }
       },
 
       preventFraming: () => {
-        if (window.top !== window.self) {
-          window.top.location = window.self.location;
+        try {
+          if (typeof window !== 'undefined' && window.top && window.top !== window.self) {
+            // navigate parent to this location
+            (window.top as Window).location.href = window.location.href;
+          }
+        } catch {
+          // ignore cross-origin/frame access errors
         }
       }
     };
@@ -48,7 +57,9 @@ export default function AdvancedProtection() {
     Object.values(protections).forEach(protection => {
       try {
         protection();
-      } catch (e) {}
+      } catch {
+        // ignore errors during protection setup
+      }
     });
 
   }, []);

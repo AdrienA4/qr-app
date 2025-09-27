@@ -109,13 +109,7 @@ export default function SourceCodeProtection() {
 
     const disableDevTools = () => {
       const noop = () => {};
-      const debug = () => {
-        setInterval(() => {
-          (function() {
-            return false;
-          }['constructor']('debugger')['call']());
-        }, 50);
-      };
+      // debug function removed (unused)
 
       try {
         if (typeof console !== 'undefined') {
@@ -123,7 +117,9 @@ export default function SourceCodeProtection() {
           console.warn = noop;
           console.error = noop;
         }
-      } catch (e) {}
+      } catch {
+        // ignore errors
+      }
     };
 
     document.addEventListener('contextmenu', handleContextMenu);
@@ -133,12 +129,10 @@ export default function SourceCodeProtection() {
 
     disableDevTools();
 
-    let devToolsOpen = false;
     const devToolsCheck = () => {
       const widthThreshold = window.outerWidth - window.innerWidth > 160;
       const heightThreshold = window.outerHeight - window.innerHeight > 160;
       if (widthThreshold || heightThreshold) {
-        devToolsOpen = true;
         window.location.reload();
       }
     };
