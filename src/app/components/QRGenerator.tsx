@@ -188,18 +188,18 @@ export default function QRGenerator() {
     }
   };
 
-  const updateConfig = (key: keyof QRConfig, value: any) => {
+  const updateConfig = <K extends keyof QRConfig, V extends QRConfig[K]>(key: K, value: V) => {
     setConfig(prev => ({
       ...prev,
       [key]: value
     }));
   };
 
-  const updateNestedConfig = (parentKey: keyof QRConfig, childKey: string, value: any) => {
+  const updateNestedConfig = <K extends keyof QRConfig, CK extends keyof QRConfig[K], V extends QRConfig[K][CK]>(parentKey: K, childKey: CK, value: V) => {
     setConfig(prev => ({
       ...prev,
       [parentKey]: {
-        ...(prev[parentKey] as any),
+        ...(typeof prev[parentKey] === 'object' && prev[parentKey] !== null ? prev[parentKey] : {}),
         [childKey]: value
       }
     }));
@@ -403,7 +403,7 @@ export default function QRGenerator() {
                     </label>
                     <select
                       value={config.dotsOptions.type}
-                      onChange={(e) => updateNestedConfig('dotsOptions', 'type', e.target.value)}
+                      onChange={(e) => updateNestedConfig('dotsOptions', 'type', e.target.value as QRConfig['dotsOptions']['type'])}
                       className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 bg-gray-700 text-white"
                     >
                       {dotTypes.map(type => (
@@ -451,7 +451,7 @@ export default function QRGenerator() {
                         onDrop={e => {
                           e.preventDefault();
                           const file = e.dataTransfer.files?.[0];
-                          if (file) handleLogoUpload({ target: { files: [file] } } as any);
+                          if (file) handleLogoUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>);
                         }}
                       >
                         <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />

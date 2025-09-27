@@ -3,9 +3,7 @@ import { AnimatePresence, motion, useAnimation } from 'framer-motion';
 import SleekFooter from './components/Footer';
 import { useState, useRef, useEffect } from 'react';
 import { 
-  QrCode, Github, Star, Zap, Sparkles, Palette, Scan, 
-  Download, Shield, Infinity, ChevronDown, CheckCircle,
-  Camera, Image, Code, Smartphone, Users, Globe
+  QrCode, Github, Zap, Sparkles, Palette, Scan, Shield, Infinity, ChevronDown, Camera
 } from 'lucide-react';
 
 export default function Home() {
@@ -83,7 +81,7 @@ export default function Home() {
     { number: "0", label: "Cost" }
   ];
 
-  function AccordionItem({ faq, index, openFaq, setOpenFaq }: any) {
+  function AccordionItem({ faq, index, openFaq, setOpenFaq }: { faq: { question: string; answer: string }; index: number; openFaq: number | null; setOpenFaq: React.Dispatch<React.SetStateAction<number | null>> }) {
     const contentRef = useRef<HTMLDivElement>(null);
     const controls = useAnimation();
     const [contentHeight, setContentHeight] = useState(0);
@@ -154,7 +152,7 @@ export default function Home() {
     );
   }
 
-  function SimpleAccordionItem({ faq, index, openFaq, setOpenFaq }: any) {
+  function SimpleAccordionItem({ faq, index, openFaq, setOpenFaq }: { faq: { question: string; answer: string }; index: number; openFaq: number | null; setOpenFaq: React.Dispatch<React.SetStateAction<number | null>> }) {
     const isOpen = openFaq === index;
 
     return (
