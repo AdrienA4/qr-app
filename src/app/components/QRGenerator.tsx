@@ -234,8 +234,8 @@ export default function QRGenerator() {
           className="rounded-3xl p-6 md:p-8 lg:p-12 bg-gray-800/90 backdrop-blur-xl border border-gray-700 shadow-2xl"
         >
           <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-green-500/20 rounded-lg">
-              <QrCode className="w-6 h-6 text-green-400" />
+              <div className="p-2 bg-purple-500/20 rounded-lg">
+                <QrCode className="w-6 h-6 text-purple-400" />
             </div>
             <h2 className="text-3xl font-bold text-white">
               Advanced QR Generator
@@ -256,7 +256,7 @@ export default function QRGenerator() {
                     onClick={() => setActiveTab(id)}
                     className={`flex items-center gap-2 flex-1 py-3 px-4 rounded-lg transition-all duration-300 ${
                       activeTab === id
-                        ? 'bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold shadow-sm'
+                        ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold shadow-sm'
                         : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
                     }`}
                   >
@@ -302,7 +302,7 @@ export default function QRGenerator() {
                   <div className="grid grid-cols-2 gap-4">
                     <button
                       onClick={() => setText('https://your-website.com')}
-                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-green-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
+                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-purple-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
                     >
                       <div className="font-medium">Website URL</div>
                       <div className="text-sm text-gray-400">https://...</div>
@@ -310,7 +310,7 @@ export default function QRGenerator() {
                     
                     <button
                       onClick={() => setText('mailto:email@example.com')}
-                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-green-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
+                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-purple-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
                     >
                       <div className="font-medium">Email</div>
                       <div className="text-sm text-gray-400">mailto:...</div>
@@ -339,7 +339,7 @@ export default function QRGenerator() {
                             updateNestedConfig('dotsOptions', 'color', scheme.dot);
                             updateNestedConfig('backgroundOptions', 'color', scheme.bg);
                           }}
-                          className="p-2 border border-gray-600 rounded-lg hover:border-green-500/50 transition-colors bg-gray-700/50"
+                          className="p-2 border border-gray-600 rounded-lg hover:border-purple-500/50 transition-colors bg-gray-700/50"
                         >
                           <div 
                             className="w-full h-8 rounded mb-1 border border-gray-500"
@@ -404,7 +404,7 @@ export default function QRGenerator() {
                     <select
                       value={config.dotsOptions.type}
                       onChange={(e) => updateNestedConfig('dotsOptions', 'type', e.target.value)}
-                      className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-gray-700 text-white"
+                      className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 bg-gray-700 text-white"
                     >
                       {dotTypes.map(type => (
                         <option key={type.value} value={type.value} className="bg-gray-800 text-white">
@@ -422,7 +422,7 @@ export default function QRGenerator() {
                     <select
                       value={config.qrOptions.errorCorrectionLevel}
                       onChange={(e) => updateNestedConfig('qrOptions', 'errorCorrectionLevel', e.target.value as 'L' | 'M' | 'Q' | 'H')}
-                      className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-green-500 bg-gray-700 text-white"
+                      className="w-full p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 bg-gray-700 text-white"
                     >
                       <option value="L">Low (7%)</option>
                       <option value="M">Medium (15%)</option>
@@ -466,12 +466,12 @@ export default function QRGenerator() {
                         />
                         <label
                           htmlFor="logo-upload"
-                          className="inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-lg cursor-pointer hover:opacity-90 transition-colors"
+                          className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg cursor-pointer hover:opacity-90 transition-colors"
                         >
                           <ImageIcon className="w-4 h-4" />
                           Upload Logo
                         </label>
-                        <p className="text-xs text-green-400 mt-2">Or drag and drop an image here</p>
+                        <p className="text-xs text-purple-400 mt-2">Or drag and drop an image here</p>
                       </div>
                     </div>
                   ) : (
@@ -559,7 +559,7 @@ export default function QRGenerator() {
                     disabled={!text.trim()}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`inline-flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-95 transition-all duration-300 ${!text.trim() ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    className={`inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-95 transition-all duration-300 ${!text.trim() ? 'opacity-40 cursor-not-allowed' : ''}`}
                     title={!text.trim() ? 'Enter content to enable download' : ''}
                   >
                     <Download className="w-4 h-4" />

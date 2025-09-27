@@ -259,7 +259,7 @@ export default function QRScanner() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-          <h2><QrCode className="w-8 h-8 text-green-400" /></h2>
+         <h2><QrCode className="w-8 h-8 text-purple-400" /></h2>
           <h2 className="text-3xl font-bold text-white">QR Code Scanner</h2>
         </div>
 
@@ -269,7 +269,7 @@ export default function QRScanner() {
             onClick={() => handleModeChange('camera')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
               scanningMode === 'camera'
-                ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold'
+                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
                 : 'bg-white/5 text-white/70 hover:bg-white/10'
             }`}
           >
@@ -280,7 +280,7 @@ export default function QRScanner() {
             onClick={() => handleModeChange('image')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
               scanningMode === 'image'
-                ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white font-semibold'
+                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
                 : 'bg-white/5 text-white/70 hover:bg-white/10'
             }`}
           >
@@ -336,8 +336,8 @@ export default function QRScanner() {
                 <video ref={videoRef} className="w-full rounded-xl" />
                 {isScanning && (
                   <>
-                    <div className="absolute inset-0 border-2 border-green-400 rounded-xl animate-pulse" />
-                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent animate-pulse" />
+                      <div className="absolute inset-0 border-2 border-purple-400 rounded-xl animate-pulse" />
+                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-pulse" />
                   </>
                 )}
               </div>
@@ -401,11 +401,11 @@ export default function QRScanner() {
               <div
                 onClick={triggerImageUpload}
                 className={`border-2 border-dashed rounded-2xl max-w-2xl mx-auto h-64 flex items-center justify-center cursor-pointer transition-colors duration-300 ${
-                  isDragActive ? 'border-green-400 bg-green-500/10' : 'border-white/20 hover:border-green-400'
+                  isDragActive ? 'border-purple-400 bg-purple-500/10' : 'border-white/20 hover:border-purple-400'
                 }`}
               >
                 <div className="text-center px-6">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-green-400" />
+                  <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
                   <p className="text-lg font-semibold text-white">
                     {isDragActive ? 'Drop image here' : 'Drag & drop or click to upload'}
                   </p>
@@ -432,7 +432,7 @@ export default function QRScanner() {
           >
             {scanResult && (
               <div className="flex items-start gap-4">
-                <CheckCircle className="w-6 h-6 text-green-400 mt-1" />
+                <CheckCircle className="w-6 h-6 text-purple-400 mt-1" />
                 <div className="flex-1">
                   <p className="text-white/80 text-sm mb-1">Scan Result:</p>
                   <p className="text-white font-medium break-words">{scanResult}</p>
@@ -441,7 +441,7 @@ export default function QRScanner() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={copyResult}
-                      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                      className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                     >
                       <Copy className="w-4 h-4" />
                       {copied ? 'Copied!' : 'Copy'}
