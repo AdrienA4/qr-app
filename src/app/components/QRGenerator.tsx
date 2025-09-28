@@ -1,6 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
-import QRCodeStyling from 'qr-code-styling';
+import QRCodeStyling, { Mode } from 'qr-code-styling';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Download, 
@@ -88,12 +88,16 @@ export default function QRGenerator() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const { typeNumber, errorCorrectionLevel } = config.qrOptions;
-      const qrOptions: Partial<QRConfig['qrOptions']> = {
-        mode: 'Byte',
+      const qrOptions: {
+        mode?: Mode;
+        errorCorrectionLevel?: 'L' | 'M' | 'Q' | 'H';
+        typeNumber?: typeof QRCodeStyling.prototype._options.qrOptions.typeNumber;
+      } = {
+        mode: 'Byte' as Mode,
         errorCorrectionLevel,
       };
-      if (typeNumber && typeNumber > 0) {
-        qrOptions.typeNumber = typeNumber;
+      if (typeNumber > 0) {
+        qrOptions.typeNumber = typeNumber as typeof QRCodeStyling.prototype._options.qrOptions.typeNumber;
       }
       
       qrRef.current = new QRCodeStyling({
@@ -102,7 +106,7 @@ export default function QRGenerator() {
         margin: Math.max(0, config.margin),
         data: text,
         image: logoImage,
-        qrOptions,
+        qrOptions: qrOptions,
         imageOptions: config.imageOptions,
         dotsOptions: config.dotsOptions,
         backgroundOptions: config.backgroundOptions,
@@ -118,7 +122,6 @@ export default function QRGenerator() {
   }, [config, text, logoImage]);
 
   useEffect(() => {
-    // Force dark background on entire page
     const originalStyle = document.body.style.background;
     const originalHtmlStyle = document.documentElement.style.background;
     
@@ -188,7 +191,6 @@ export default function QRGenerator() {
     }
   };
 
-  // updateConfig removed (was unused) — use updateNestedConfig for nested updates
 
   const updateNestedConfig = <K extends keyof QRConfig, CK extends keyof QRConfig[K], V extends QRConfig[K][CK]>(parentKey: K, childKey: CK, value: V) => {
     setConfig(prev => ({
