@@ -17,7 +17,7 @@ export default function QRScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [error, setError] = useState('');
-  const [_cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -28,7 +28,7 @@ export default function QRScanner() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  codeReaderRef.current = new BrowserMultiFormatReader();
+    codeReaderRef.current = new BrowserMultiFormatReader();
     checkCameraPermission();
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -97,32 +97,38 @@ export default function QRScanner() {
     }
   };
 
-  // requestCameraPermission removed (not used) — camera permission handled in checkCameraPermission/startVideo
-
   const startVideo = async () => {
-    if (!selectedDeviceId && videoInputDevices.length > 0) {
-      setSelectedDeviceId(videoInputDevices[0].deviceId);
-    }
-    
-    if (!selectedDeviceId) return;
-    
     try {
       setError('');
       stopVideo();
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { deviceId: { exact: selectedDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-      });
+      
+      if (!selectedDeviceId && videoInputDevices.length > 0) {
+        setSelectedDeviceId(videoInputDevices[0].deviceId);
+      }
+      
+      const constraints = {
+        video: { 
+          deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 } 
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
+        await videoRef.current.play();
         setIsVideoActive(true);
         setCameraPermission('granted');
+        setError('');
       }
     } catch (error) {
       console.error('Camera error:', error);
-      setError('Failed to start camera. Trying next available camera...');
+      setError('Failed to start camera. Please make sure camera permissions are granted.');
       setCameraPermission('denied');
+      setIsVideoActive(false);
     }
   };
 
@@ -131,16 +137,23 @@ export default function QRScanner() {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    if (videoRef.current) videoRef.current.srcObject = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setIsVideoActive(false);
   };
 
   const startCameraScan = async () => {
-    if (!codeReaderRef.current || !selectedDeviceId || !isVideoActive) return;
+    if (!codeReaderRef.current || !selectedDeviceId || !isVideoActive) {
+      setError('Camera not ready. Please start the camera first.');
+      return;
+    }
+    
     try {
       setIsScanning(true);
       setScanResult('');
       setError('');
+      
       await codeReaderRef.current.decodeFromVideoDevice(
         selectedDeviceId,
         videoRef.current!,
@@ -149,10 +162,13 @@ export default function QRScanner() {
             setScanResult(result.getText());
             stopScanning();
           }
-          if (err && err.name !== 'NotFoundException') console.error('Scan error:', err);
+          if (err && err.name !== 'NotFoundException') {
+            console.error('Scan error:', err);
+          }
         }
       );
-    } catch {
+    } catch (error) {
+      console.error('Failed to start scanning:', error);
       setError('Failed to start scanning.');
       setIsScanning(false);
     }
@@ -161,7 +177,6 @@ export default function QRScanner() {
   const stopScanning = () => {
     if (codeReaderRef.current) {
       try {
-        // BrowserMultiFormatReader may expose reset(); avoid 'any' by using a local type
         type ReaderWithReset = BrowserMultiFormatReader & { reset?: () => void };
         const reader = codeReaderRef.current as ReaderWithReset;
         if (typeof reader.reset === 'function') {
@@ -234,191 +249,228 @@ export default function QRScanner() {
   const selectedDevice = videoInputDevices.find(device => device.deviceId === selectedDeviceId);
 
   return (
-    <div className="relative w-full max-w-3xl mx-auto px-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.1 }}
-        className="rounded-3xl p-8 md:p-12 bg-white/10 backdrop-blur-xl border border-white/10 shadow-2xl"
-      >
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
-         <h2><QrCode className="w-8 h-8 text-purple-400" /></h2>
-          <h2 className="text-3xl font-bold text-white">QR Code Scanner</h2>
-        </div>
+    <div className="min-h-screen bg-gray-900 py-8">
+      <div className="relative w-full max-w-3xl mx-auto px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="rounded-3xl p-8 md:p-12 bg-gray-800/90 backdrop-blur-xl border border-gray-700 shadow-2xl"
+        >
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-8">
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <QrCode className="w-8 h-8 text-purple-400" />
+            </div>
+            <h2 className="text-3xl font-bold text-white">QR Code Scanner</h2>
+          </div>
 
-        {/* Mode Toggle */}
-        <div className="flex gap-4 mb-8">
-          <button
-            onClick={() => handleModeChange('camera')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              scanningMode === 'camera'
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-            }`}
-          >
-            <Camera className="w-5 h-5" />
-            Camera
-          </button>
-          <button
-            onClick={() => handleModeChange('image')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              scanningMode === 'image'
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
-            }`}
-          >
-            <Image className="w-5 h-5" />
-            Upload
-          </button>
-        </div>
-
-        {/* Camera or Upload Section */}
-        <AnimatePresence mode="wait">
-          {scanningMode === 'camera' ? (
-            <motion.div
-              key="camera"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
+          {/* Mode Toggle */}
+          <div className="flex gap-4 mb-8">
+            <button
+              onClick={() => handleModeChange('camera')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+                scanningMode === 'camera'
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold'
+                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+              }`}
             >
-              {/* Camera Dropdown */}
-              <div ref={dropdownRef} className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full bg-white/5 text-white/80 py-3 px-4 rounded-xl flex items-center justify-between"
-                >
-                  <span>{selectedDevice?.label || 'Select Camera'}</span>
-                  <ChevronDown className="w-5 h-5 text-white/60" />
-                </button>
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.ul
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="absolute z-10 mt-2 w-full bg-slate-800/90 backdrop-blur-xl rounded-xl border border-white/10 shadow-lg max-h-60 overflow-auto"
-                    >
-                      {videoInputDevices.map((device) => (
-                        <li
-                          key={device.deviceId}
-                          onClick={() => handleDeviceSelect(device.deviceId)}
-                          className="px-4 py-2 text-white/80 hover:bg-purple-600/20 cursor-pointer"
-                        >
-                          {device.label}
-                        </li>
-                      ))}
-                    </motion.ul>
-                  )}
-                </AnimatePresence>
-              </div>
+              <Camera className="w-5 h-5" />
+              Camera
+            </button>
+            <button
+              onClick={() => handleModeChange('image')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
+                scanningMode === 'image'
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold'
+                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              <Image className="w-5 h-5" />
+              Upload
+            </button>
+          </div>
 
-              {/* Video */}
-              <div className="relative rounded-xl overflow-hidden border border-white/10">
-                <video ref={videoRef} className="w-full rounded-xl" />
-                {isScanning && (
-                  <>
+          {/* Camera or Upload Section */}
+          <AnimatePresence mode="wait">
+            {scanningMode === 'camera' ? (
+              <motion.div
+                key="camera"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Camera Dropdown */}
+                {videoInputDevices.length > 0 && (
+                  <div ref={dropdownRef} className="relative">
+                    <button
+                      onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                      className="w-full bg-gray-700/50 text-gray-300 py-3 px-4 rounded-xl flex items-center justify-between hover:bg-gray-700"
+                    >
+                      <span>{selectedDevice?.label || 'Select Camera'}</span>
+                      <ChevronDown className="w-5 h-5 text-gray-400" />
+                    </button>
+                    <AnimatePresence>
+                      {isDropdownOpen && (
+                        <motion.ul
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="absolute z-10 mt-2 w-full bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-600 shadow-lg max-h-60 overflow-auto"
+                        >
+                          {videoInputDevices.map((device) => (
+                            <li
+                              key={device.deviceId}
+                              onClick={() => handleDeviceSelect(device.deviceId)}
+                              className="px-4 py-2 text-gray-300 hover:bg-purple-600/20 cursor-pointer hover:text-white"
+                            >
+                              {device.label}
+                            </li>
+                          ))}
+                        </motion.ul>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {/* Video */}
+                <div className="relative rounded-xl overflow-hidden border border-gray-600 bg-black">
+                  <video 
+                    ref={videoRef} 
+                    className="w-full rounded-xl min-h-[300px] object-cover"
+                    muted
+                    playsInline
+                  />
+                  {!isVideoActive && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/50">
+                      <p className="text-gray-400">Camera preview will appear here</p>
+                    </div>
+                  )}
+                  {isScanning && (
+                    <>
                       <div className="absolute inset-0 border-2 border-purple-400 rounded-xl animate-pulse" />
                       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-pulse" />
-                  </>
-                )}
-              </div>
-
-              {/* Camera Controls */}
-              <div className="flex flex-wrap gap-4 justify-center">
-                {!isVideoActive ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={startVideo}
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
-                  >
-                    <Play className="w-5 h-5" />
-                    Start Camera
-                  </motion.button>
-                ) : !isScanning ? (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={startCameraScan}
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
-                  >
-                    <Scan className="w-5 h-5" />
-                    Start Scan
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={stopScanning}
-                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
-                  >
-                    <Square className="w-5 h-5" />
-                    Stop Scan
-                  </motion.button>
-                )}
-                {isVideoActive && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={stopVideo}
-                    className="bg-gray-700 hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
-                  >
-                    <Video className="w-5 h-5" />
-                    Stop Camera
-                  </motion.button>
-                )}
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="image"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-6"
-            >
-              {/* Upload Area */}
-              <div
-                onClick={triggerImageUpload}
-                className={`border-2 border-dashed rounded-2xl max-w-2xl mx-auto h-64 flex items-center justify-center cursor-pointer transition-colors duration-300 ${
-                  isDragActive ? 'border-purple-400 bg-purple-500/10' : 'border-white/20 hover:border-purple-400'
-                }`}
-              >
-                <div className="text-center px-6">
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
-                  <p className="text-lg font-semibold text-white">
-                    {isDragActive ? 'Drop image here' : 'Drag & drop or click to upload'}
-                  </p>
-                  <p className="text-white/70 text-sm mt-1">Supports PNG, JPG, JPEG</p>
+                    </>
+                  )}
                 </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
+
+                {/* Camera Controls */}
+                <div className="flex flex-wrap gap-4 justify-center">
+                  {!isVideoActive ? (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={startVideo}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    >
+                      <Play className="w-5 h-5" />
+                      Start Camera
+                    </motion.button>
+                  ) : !isScanning ? (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={startCameraScan}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    >
+                      <Scan className="w-5 h-5" />
+                      Start Scan
+                    </motion.button>
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={stopScanning}
+                      className="bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    >
+                      <Square className="w-5 h-5" />
+                      Stop Scan
+                    </motion.button>
+                  )}
+                  {isVideoActive && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={stopVideo}
+                      className="bg-gray-700 hover:bg-gray-800 text-white font-bold py-4 px-8 rounded-xl flex items-center gap-3 text-lg"
+                    >
+                      <Video className="w-5 h-5" />
+                      Stop Camera
+                    </motion.button>
+                  )}
+                </div>
+
+                {/* Camera Status */}
+                <div className="text-center">
+                  <p className="text-sm text-gray-400">
+                    {cameraPermission === 'denied' && 'Camera access denied. Please check browser permissions.'}
+                    {cameraPermission === 'prompt' && 'Camera permission required.'}
+                    {isVideoActive && 'Camera is active and ready to scan.'}
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="image"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Upload Area */}
+                <div
+                  onClick={triggerImageUpload}
+                  className={`border-2 border-dashed rounded-2xl max-w-2xl mx-auto h-64 flex items-center justify-center cursor-pointer transition-colors duration-300 ${
+                    isDragActive ? 'border-purple-400 bg-purple-500/10' : 'border-gray-600 hover:border-purple-400 bg-gray-700/50'
+                  }`}
+                >
+                  <div className="text-center px-6">
+                    <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+                    <p className="text-lg font-semibold text-white">
+                      {isDragActive ? 'Drop image here' : 'Drag & drop or click to upload'}
+                    </p>
+                    <p className="text-gray-400 text-sm mt-1">Supports PNG, JPG, JPEG</p>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error Display */}
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 rounded-xl bg-red-600/20 border border-red-600/50"
+            >
+              <div className="flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <p className="text-red-400 text-sm">{error}</p>
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Result Section */}
-        {(scanResult || error) && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-10 p-6 rounded-xl bg-white/10 border border-white/20 shadow-lg"
-          >
-            {scanResult && (
+          {/* Result Section */}
+          {scanResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-6 rounded-xl bg-gray-700/50 border border-gray-600 shadow-lg"
+            >
               <div className="flex items-start gap-4">
                 <CheckCircle className="w-6 h-6 text-purple-400 mt-1" />
                 <div className="flex-1">
-                  <p className="text-white/80 text-sm mb-1">Scan Result:</p>
+                  <p className="text-gray-300 text-sm mb-1">Scan Result:</p>
                   <p className="text-white font-medium break-words">{scanResult}</p>
                   <div className="flex gap-3 mt-3">
                     <motion.button
@@ -434,24 +486,17 @@ export default function QRScanner() {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={clearResult}
-                      className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                     >
                       Clear
                     </motion.button>
                   </div>
                 </div>
               </div>
-            )}
-
-            {error && (
-              <div className="flex items-center gap-3">
-                <AlertCircle className="w-6 h-6 text-red-400" />
-                <p className="text-red-400">{error}</p>
-              </div>
-            )}
-          </motion.div>
-        )}
-      </motion.div>
+            </motion.div>
+          )}
+        </motion.div>
+      </div>
     </div>
   );
 }
