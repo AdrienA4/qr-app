@@ -27,25 +27,18 @@ const Navbar = () => {
         const currentScrollY = window.scrollY;
         const windowHeight = window.innerHeight;
         const documentHeight = document.documentElement.scrollHeight;
-        
-        // Calculate scroll progress
         const progress = (currentScrollY / (documentHeight - windowHeight)) * 100;
         setScrollProgress(Math.min(progress, 100));
 
-        // Check if at top of page
         setIsAtTop(currentScrollY < 50);
 
-        // Only start hiding after scrolling down a bit (80px threshold)
         if (currentScrollY > 80) {
           if (currentScrollY > lastScrollY && currentScrollY - lastScrollY > 5) {
-            // Scrolling down - hide navbar
             setIsVisible(false);
           } else if (lastScrollY - currentScrollY > 5) {
-            // Scrolling up - show navbar
             setIsVisible(true);
           }
         } else {
-          // At top of page - always show navbar
           setIsVisible(true);
         }
 
@@ -66,7 +59,6 @@ const Navbar = () => {
 
     window.addEventListener('scroll', throttledScroll, { passive: true });
     
-    // Initial check
     controlNavbar();
 
     return () => {
