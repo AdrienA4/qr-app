@@ -17,7 +17,7 @@ export default function QRScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
   const [error, setError] = useState('');
-  const [_cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
@@ -120,7 +120,7 @@ export default function QRScanner() {
     }
   } catch (error) {
     console.error('Camera error:', error);
-    setError('Failed to start camera. Please check permissions or try another device.');
+    setError('Failed to start camera. Please check permissions or try another device.');    
     setCameraPermission('denied');
   }
 };

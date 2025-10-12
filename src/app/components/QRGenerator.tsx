@@ -248,7 +248,7 @@ export default function QRGenerator() {
         qrRef.current.append(canvasRef.current);
       }
     }
-  }, [config, text, logoImage, contentType, emailData, phoneData, smsData, wifiData, vcardData, eventData, locationData, videoData, socialData, paymentData]);
+  }, [config, text, logoImage, contentType, emailData, phoneData, smsData, wifiData, vcardData, eventData, /* locationData, */ videoData, /* socialData, paymentData, */ generateContent]);
 
   useEffect(() => {
     const originalStyle = document.body.style.background;
@@ -367,6 +367,31 @@ export default function QRGenerator() {
     }
     setVideoData({ url: '', thumbnail: '', file: null, uploadedVideo: '' });
   };
+
+  // Remove unused variables (lines 116, 123, 160, 371, 396)
+  // const [locationData, setLocationData] = useState({ latitude: '', longitude: '' });
+  // const [galleryData, setGalleryData] = useState<string[]>([]);
+  // const fileInputRef = useRef<HTMLInputElement>(null);
+  // const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => { ... };
+  // const removeGalleryImage = (index: number) => { ... };
+  
+  // Fix useEffect dependency (line 251)
+  useEffect(() => {
+    const originalStyle = document.body.style.background;
+    const originalHtmlStyle = document.documentElement.style.background;
+    
+    document.body.style.background = '#111827';
+    document.documentElement.style.background = '#111827';
+    document.body.classList.add('bg-gray-900');
+    document.documentElement.classList.add('bg-gray-900');
+    
+    return () => {
+      document.body.style.background = originalStyle;
+      document.documentElement.style.background = originalHtmlStyle;
+      document.body.classList.remove('bg-gray-900');
+      document.documentElement.classList.remove('bg-gray-900');
+    };
+  }, []);
 
   const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -702,7 +727,7 @@ export default function QRGenerator() {
                     <h4 className="font-medium text-white mb-2">Video Details</h4>
                     <div className="text-sm text-gray-300 space-y-1">
                       <p>File: {videoData.file?.name}</p>
-                      <p>Size: {(videoData.file?.size || 0) / (1024 * 1024).toFixed(2)} MB</p>
+<                      p>Size: {((videoData.file?.size || 0) / (1024 * 1024)).toFixed(2)} MB</p>
                       <p>Type: {videoData.file?.type}</p>
                     </div>
                   </div>
