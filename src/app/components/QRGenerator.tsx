@@ -348,9 +348,19 @@ export default function QRGenerator() {
     if (files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('video/')) {
-        handleVideoUpload({ target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>);
+        const syntheticEvent = {
+          target: {
+            files: [file]
+          }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        handleVideoUpload(syntheticEvent);
       } else if (file.type.startsWith('image/')) {
-        handleLogoUpload({ target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>);
+        const syntheticEvent = {
+          target: {
+            files: [file]
+          }
+        } as unknown as React.ChangeEvent<HTMLInputElement>;
+        handleLogoUpload(syntheticEvent);
       } else {
         alert('Please upload only video or image files');
       }
