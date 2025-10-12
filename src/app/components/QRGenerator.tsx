@@ -48,7 +48,7 @@ type QRConfig = {
   dotsOptions: {
     type: 'dots' | 'rounded' | 'classy' | 'classy-rounded' | 'square' | 'extra-rounded';
     color: string;
-  };
+};
   backgroundOptions: {
     color: string;
   };
@@ -348,9 +348,9 @@ export default function QRGenerator() {
     if (files.length > 0) {
       const file = files[0];
       if (file.type.startsWith('video/')) {
-        handleVideoUpload({ target: { files: [file] } } as any);
+        handleVideoUpload({ target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>);
       } else if (file.type.startsWith('image/')) {
-        handleLogoUpload({ target: { files: [file] } } as any);
+        handleLogoUpload({ target: { files: [file] } } as React.ChangeEvent<HTMLInputElement>);
       } else {
         alert('Please upload only video or image files');
       }
