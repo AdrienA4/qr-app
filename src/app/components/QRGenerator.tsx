@@ -10,7 +10,25 @@ import {
   Image as ImageIcon,
   Link, 
   Palette,
-  X
+  X,
+  Video,
+  FileText,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  MessageCircle,
+  Wifi,
+  User,
+  CreditCard,
+  Music,
+  Youtube,
+  Instagram,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Upload,
+  Film
 } from 'lucide-react';
 
 type QRConfig = {
@@ -44,12 +62,67 @@ type QRConfig = {
   };
 };
 
+type ContentType = 
+  | 'url' 
+  | 'text' 
+  | 'email' 
+  | 'phone' 
+  | 'sms' 
+  | 'wifi' 
+  | 'vcard' 
+  | 'event' 
+  | 'location' 
+  | 'video' 
+  | 'gallery' 
+  | 'social' 
+  | 'payment';
+
+type VideoData = {
+  url: string;
+  thumbnail: string;
+  file: File | null;
+  uploadedVideo: string;
+};
+
 export default function QRGenerator() {
   const [errorMsg, setErrorMsg] = useState('');
   const [text, setText] = useState('https://example.com');
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'content' | 'design' | 'image'>('content');
   const [logoImage, setLogoImage] = useState<string>('');
+  const [contentType, setContentType] = useState<ContentType>('url');
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Advanced content states
+  const [emailData, setEmailData] = useState({ address: '', subject: '', body: '' });
+  const [phoneData, setPhoneData] = useState({ number: '' });
+  const [smsData, setSmsData] = useState({ number: '', message: '' });
+  const [wifiData, setWifiData] = useState({ ssid: '', password: '', encryption: 'WPA' });
+  const [vcardData, setVcardData] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    company: '',
+    title: ''
+  });
+  const [eventData, setEventData] = useState({
+    title: '',
+    location: '',
+    startTime: '',
+    endTime: '',
+    description: ''
+  });
+  const [locationData, setLocationData] = useState({ latitude: '', longitude: '' });
+  const [videoData, setVideoData] = useState<VideoData>({ 
+    url: '', 
+    thumbnail: '', 
+    file: null,
+    uploadedVideo: '' 
+  });
+  const [galleryData, setGalleryData] = useState<string[]>([]);
+  const [socialData, setSocialData] = useState({ platform: 'instagram', username: '' });
+  const [paymentData, setPaymentData] = useState({ type: 'paypal', address: '', amount: '' });
 
   const [config, setConfig] = useState<QRConfig>({
     width: 300,
@@ -84,6 +157,60 @@ export default function QRGenerator() {
 
   const qrRef = useRef<QRCodeStyling | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  // Generate content based on selected type
+  const generateContent = () => {
+    switch (contentType) {
+      case 'email':
+        return `mailto:${emailData.address}?subject=${encodeURIComponent(emailData.subject)}&body=${encodeURIComponent(emailData.body)}`;
+      
+      case 'phone':
+        return `tel:${phoneData.number}`;
+      
+      case 'sms':
+        return `sms:${smsData.number}?body=${encodeURIComponent(smsData.message)}`;
+      
+      case 'wifi':
+        return `WIFI:S:${wifiData.ssid};T:${wifiData.encryption};P:${wifiData.password};;`;
+      
+      case 'vcard':
+        return `BEGIN:VCARD\nVERSION:3.0\nFN:${vcardData.firstName} ${vcardData.lastName}\nTEL:${vcardData.phone}\nEMAIL:${vcardData.email}\nORG:${vcardData.company}\nTITLE:${vcardData.title}\nEND:VCARD`;
+      
+      case 'event':
+        return `BEGIN:VEVENT\nSUMMARY:${eventData.title}\nLOCATION:${eventData.location}\nDTSTART:${eventData.startTime}\nDTEND:${eventData.endTime}\nDESCRIPTION:${eventData.description}\nEND:VEVENT`;
+      
+      case 'location':
+        return `geo:${locationData.latitude},${locationData.longitude}`;
+      
+      case 'video':
+        if (videoData.uploadedVideo) {
+          return videoData.uploadedVideo;
+        }
+        return videoData.url;
+      
+      case 'social':
+        const socialUrls = {
+          instagram: `https://instagram.com/${socialData.username}`,
+          facebook: `https://facebook.com/${socialData.username}`,
+          twitter: `https://twitter.com/${socialData.username}`,
+          youtube: `https://youtube.com/${socialData.username}`,
+          linkedin: `https://linkedin.com/in/${socialData.username}`
+        };
+        return socialUrls[socialData.platform as keyof typeof socialUrls] || socialData.username;
+      
+      case 'payment':
+        const paymentUrls = {
+          paypal: `https://paypal.me/${paymentData.address}${paymentData.amount ? `?amount=${paymentData.amount}` : ''}`,
+          venmo: `venmo://paycharge?txn=pay&recipients=${paymentData.address}${paymentData.amount ? `&amount=${paymentData.amount}` : ''}`
+        };
+        return paymentUrls[paymentData.type as keyof typeof paymentUrls] || paymentData.address;
+      
+      default:
+        return text;
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -100,11 +227,13 @@ export default function QRGenerator() {
         qrOptions.typeNumber = typeNumber as typeof QRCodeStyling.prototype._options.qrOptions.typeNumber;
       }
       
+      const content = generateContent();
+      
       qrRef.current = new QRCodeStyling({
         width: Math.max(100, config.width),
         height: Math.max(100, config.height),
         margin: Math.max(0, config.margin),
-        data: text,
+        data: content,
         image: logoImage,
         qrOptions: qrOptions,
         imageOptions: config.imageOptions,
@@ -119,7 +248,7 @@ export default function QRGenerator() {
         qrRef.current.append(canvasRef.current);
       }
     }
-  }, [config, text, logoImage]);
+  }, [config, text, logoImage, contentType, emailData, phoneData, smsData, wifiData, vcardData, eventData, locationData, videoData, socialData, paymentData]);
 
   useEffect(() => {
     const originalStyle = document.body.style.background;
@@ -159,12 +288,117 @@ export default function QRGenerator() {
     reader.readAsDataURL(file);
   };
 
+  const handleVideoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('video/')) {
+      alert('Please upload a video file');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      alert('Please upload a video smaller than 50MB');
+      return;
+    }
+
+    // Create object URL for the video file
+    const videoUrl = URL.createObjectURL(file);
+    
+    // Generate thumbnail from video
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.currentTime = 1; // Capture at 1 second
+    
+    video.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+      
+      const thumbnail = canvas.toDataURL('image/jpeg');
+      
+      setVideoData(prev => ({
+        ...prev,
+        file,
+        uploadedVideo: videoUrl,
+        thumbnail
+      }));
+    };
+
+    video.load();
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('video/')) {
+        handleVideoUpload({ target: { files: [file] } } as any);
+      } else if (file.type.startsWith('image/')) {
+        handleLogoUpload({ target: { files: [file] } } as any);
+      } else {
+        alert('Please upload only video or image files');
+      }
+    }
+  };
+
   const removeLogo = () => {
     setLogoImage('');
   };
 
+  const removeVideo = () => {
+    if (videoData.uploadedVideo) {
+      URL.revokeObjectURL(videoData.uploadedVideo);
+    }
+    setVideoData({ url: '', thumbnail: '', file: null, uploadedVideo: '' });
+  };
+
+  const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    const validFiles = files.filter(file => 
+      file.type.startsWith('image/') && file.size <= 2 * 1024 * 1024
+    );
+
+    if (validFiles.length !== files.length) {
+      alert('Some files were skipped. Please upload image files smaller than 2MB each.');
+    }
+
+    const readers = validFiles.map(file => {
+      return new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+    });
+
+    Promise.all(readers).then((images) => {
+      setGalleryData(prev => [...prev, ...images]);
+    });
+  };
+
+  const removeGalleryImage = (index: number) => {
+    setGalleryData(prev => prev.filter((_, i) => i !== index));
+  };
+
   const downloadQR = () => {
-    if (!qrRef.current || !text.trim()) {
+    if (!qrRef.current || !generateContent().trim()) {
       setErrorMsg('Nothing to download. Please enter content to generate a QR code.');
       setTimeout(() => setErrorMsg(''), 2500);
       return;
@@ -176,13 +410,14 @@ export default function QRGenerator() {
   };
 
   const copyToClipboard = async () => {
-    if (!text.trim()) {
+    const content = generateContent();
+    if (!content.trim()) {
       setErrorMsg('Nothing to copy. Please enter content first.');
       setTimeout(() => setErrorMsg(''), 2500);
       return;
     }
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -190,7 +425,6 @@ export default function QRGenerator() {
       setTimeout(() => setErrorMsg(''), 2500);
     }
   };
-
 
   const updateNestedConfig = <K extends keyof QRConfig, CK extends keyof QRConfig[K], V extends QRConfig[K][CK]>(parentKey: K, childKey: CK, value: V) => {
     setConfig(prev => ({
@@ -202,13 +436,28 @@ export default function QRGenerator() {
     }));
   };
 
+  const contentTypes = [
+    { value: 'url', icon: Link, label: 'Website URL', description: 'Link to any website' },
+    { value: 'text', icon: FileText, label: 'Plain Text', description: 'Any text message' },
+    { value: 'email', icon: Mail, label: 'Email', description: 'Send email with subject and body' },
+    { value: 'phone', icon: Phone, label: 'Phone', description: 'Make phone call' },
+    { value: 'sms', icon: MessageCircle, label: 'SMS', description: 'Send text message' },
+    { value: 'wifi', icon: Wifi, label: 'WiFi', description: 'Share WiFi credentials' },
+    { value: 'vcard', icon: User, label: 'Contact', description: 'Share contact information' },
+    { value: 'event', icon: Calendar, label: 'Event', description: 'Add to calendar' },
+    { value: 'location', icon: MapPin, label: 'Location', description: 'GPS coordinates' },
+    { value: 'video', icon: Video, label: 'Video', description: 'Video content or files' },
+    { value: 'social', icon: Instagram, label: 'Social Media', description: 'Social profiles' },
+    { value: 'payment', icon: CreditCard, label: 'Payment', description: 'Payment links' },
+  ];
+
   const colorSchemes = [
     { name: 'Classic', dot: '#000000', bg: '#ffffff' },
-  { name: 'Emerald', dot: '#8b5cf6', bg: '#f5f3ff' },
-  { name: 'Forest', dot: '#7c3aed', bg: '#f8f3ff' },
+    { name: 'Emerald', dot: '#8b5cf6', bg: '#f5f3ff' },
+    { name: 'Forest', dot: '#7c3aed', bg: '#f8f3ff' },
     { name: 'Ocean', dot: '#0ea5e9', bg: '#f0f9ff' },
     { name: 'Sunset', dot: '#f59e0b', bg: '#fffbeb' },
-  { name: 'Dark', dot: '#7c3aed', bg: '#1f2937' },
+    { name: 'Dark', dot: '#7c3aed', bg: '#1f2937' },
   ];
 
   const dotTypes = [
@@ -219,6 +468,323 @@ export default function QRGenerator() {
     { value: 'square', label: 'Square' },
     { value: 'extra-rounded', label: 'Extra Rounded' },
   ];
+
+  const renderContentForm = () => {
+    switch (contentType) {
+      case 'url':
+      case 'text':
+        return (
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder={contentType === 'url' ? "Enter website URL..." : "Enter any text..."}
+            className="w-full h-32 p-4 bg-gray-700/50 border border-gray-600 rounded-xl resize-none placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white"
+          />
+        );
+
+      case 'email':
+        return (
+          <div className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email address"
+              value={emailData.address}
+              onChange={(e) => setEmailData(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Subject (optional)"
+              value={emailData.subject}
+              onChange={(e) => setEmailData(prev => ({ ...prev, subject: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <textarea
+              placeholder="Email body (optional)"
+              value={emailData.body}
+              onChange={(e) => setEmailData(prev => ({ ...prev, body: e.target.value }))}
+              className="w-full h-20 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        );
+
+      case 'phone':
+        return (
+          <input
+            type="tel"
+            placeholder="Phone number (e.g., +1234567890)"
+            value={phoneData.number}
+            onChange={(e) => setPhoneData({ number: e.target.value })}
+            className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        );
+
+      case 'sms':
+        return (
+          <div className="space-y-4">
+            <input
+              type="tel"
+              placeholder="Phone number"
+              value={smsData.number}
+              onChange={(e) => setSmsData(prev => ({ ...prev, number: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <textarea
+              placeholder="Message"
+              value={smsData.message}
+              onChange={(e) => setSmsData(prev => ({ ...prev, message: e.target.value }))}
+              className="w-full h-20 p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        );
+
+      case 'wifi':
+        return (
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Network name (SSID)"
+              value={wifiData.ssid}
+              onChange={(e) => setWifiData(prev => ({ ...prev, ssid: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={wifiData.password}
+              onChange={(e) => setWifiData(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <select
+              value={wifiData.encryption}
+              onChange={(e) => setWifiData(prev => ({ ...prev, encryption: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="WPA">WPA/WPA2</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">No Encryption</option>
+            </select>
+          </div>
+        );
+
+      case 'vcard':
+        return (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <input
+                type="text"
+                placeholder="First name"
+                value={vcardData.firstName}
+                onChange={(e) => setVcardData(prev => ({ ...prev, firstName: e.target.value }))}
+                className="p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <input
+                type="text"
+                placeholder="Last name"
+                value={vcardData.lastName}
+                onChange={(e) => setVcardData(prev => ({ ...prev, lastName: e.target.value }))}
+                className="p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+            <input
+              type="tel"
+              placeholder="Phone number"
+              value={vcardData.phone}
+              onChange={(e) => setVcardData(prev => ({ ...prev, phone: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={vcardData.email}
+              onChange={(e) => setVcardData(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Company"
+              value={vcardData.company}
+              onChange={(e) => setVcardData(prev => ({ ...prev, company: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="text"
+              placeholder="Job title"
+              value={vcardData.title}
+              onChange={(e) => setVcardData(prev => ({ ...prev, title: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        );
+
+      case 'video':
+        return (
+          <div className="space-y-6">
+            {/* Video URL Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Video URL
+              </label>
+              <input
+                type="url"
+                placeholder="YouTube, Vimeo, or direct video URL"
+                value={videoData.url}
+                onChange={(e) => setVideoData(prev => ({ ...prev, url: e.target.value }))}
+                className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-600"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-gray-800 text-gray-400">OR</span>
+              </div>
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-3">
+                Upload Video File
+              </label>
+              
+              {!videoData.uploadedVideo ? (
+                <div
+                  className={`border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-300 cursor-pointer ${
+                    isDragging 
+                      ? 'border-purple-500 bg-purple-500/20' 
+                      : 'border-gray-600 bg-gray-700/50 hover:border-purple-500/50 hover:bg-gray-700/70'
+                  }`}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => videoInputRef.current?.click()}
+                >
+                  <Film className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-300 mb-2">Drag and drop your video here</p>
+                  <p className="text-sm text-gray-400 mb-4">MP4, WebM, MOV up to 50MB</p>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:opacity-90 transition-colors"
+                  >
+                    <Upload className="w-4 h-4" />
+                    Select Video File
+                  </button>
+                  <p className="text-xs text-purple-400 mt-2">Click to browse files</p>
+                  
+                  <input
+                    ref={videoInputRef}
+                    type="file"
+                    accept="video/*"
+                    onChange={handleVideoUpload}
+                    className="hidden"
+                  />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <video
+                      src={videoData.uploadedVideo}
+                      controls
+                      className="w-full rounded-lg border border-gray-600 max-h-64"
+                    />
+                    <button
+                      onClick={removeVideo}
+                      className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 transition-colors w-6 h-6 flex items-center justify-center"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                  
+                  <div className="bg-gray-700/50 rounded-lg p-4">
+                    <h4 className="font-medium text-white mb-2">Video Details</h4>
+                    <div className="text-sm text-gray-300 space-y-1">
+                      <p>File: {videoData.file?.name}</p>
+                      <p>Size: {(videoData.file?.size || 0) / (1024 * 1024).toFixed(2)} MB</p>
+                      <p>Type: {videoData.file?.type}</p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={removeVideo}
+                    className="w-full bg-gray-700/50 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors"
+                  >
+                    Remove Video
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="text-sm text-gray-400 bg-gray-800/50 rounded-lg p-4">
+              <h4 className="font-medium text-white mb-2">How it works:</h4>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Enter a video URL for online platforms</li>
+                <li>Upload video files for local hosting</li>
+                <li>QR code will link to the video content</li>
+                <li>Supported: MP4, WebM, MOV, AVI files</li>
+              </ul>
+            </div>
+          </div>
+        );
+
+      case 'social':
+        return (
+          <div className="space-y-4">
+            <select
+              value={socialData.platform}
+              onChange={(e) => setSocialData(prev => ({ ...prev, platform: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="twitter">Twitter</option>
+              <option value="youtube">YouTube</option>
+              <option value="linkedin">LinkedIn</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Username"
+              value={socialData.username}
+              onChange={(e) => setSocialData(prev => ({ ...prev, username: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        );
+
+      case 'payment':
+        return (
+          <div className="space-y-4">
+            <select
+              value={paymentData.type}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, type: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="paypal">PayPal</option>
+              <option value="venmo">Venmo</option>
+            </select>
+            <input
+              type="text"
+              placeholder="Username or address"
+              value={paymentData.address}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, address: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            <input
+              type="number"
+              placeholder="Amount (optional)"
+              value={paymentData.amount}
+              onChange={(e) => setPaymentData(prev => ({ ...prev, amount: e.target.value }))}
+              className="w-full p-3 bg-gray-700/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-900" style={{ background: '#111827' }}>
@@ -231,8 +797,8 @@ export default function QRGenerator() {
           className="rounded-3xl p-6 md:p-8 lg:p-12 bg-gray-800/90 backdrop-blur-xl border border-gray-700 shadow-2xl"
         >
           <div className="flex items-center gap-3 mb-8">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
-                <QrCode className="w-6 h-6 text-purple-400" />
+            <div className="p-2 bg-purple-500/20 rounded-lg">
+              <QrCode className="w-6 h-6 text-purple-400" />
             </div>
             <h2 className="text-3xl font-bold text-white">
               Advanced QR Generator
@@ -268,55 +834,85 @@ export default function QRGenerator() {
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="space-y-4"
+                  className="space-y-6"
                 >
+                  {/* Content Type Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Content to encode
+                    <label className="block text-sm font-medium text-gray-300 mb-3">
+                      Content Type
                     </label>
-                    <textarea
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      placeholder="Enter URL, text, email, phone number, etc..."
-                      className="w-full h-32 p-4 bg-gray-700/50 border border-gray-600 rounded-xl resize-none placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-300 text-white"
-                    />
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-sm text-gray-400">
-                        {text.length} characters
-                      </span>
-                      <button
-                        onClick={copyToClipboard}
-                        disabled={!text.trim()}
-                        className={`flex items-center gap-1 text-sm ${!text.trim() ? 'opacity-50 cursor-not-allowed text-gray-500' : 'text-gray-300 hover:text-white'}`}
-                        title={!text.trim() ? 'Enter content to enable copy' : ''}
-                      >
-                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                        {copied ? 'Copied!' : 'Copy'}
-                      </button>
+                    <div 
+                      className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-80 overflow-y-auto custom-scrollbar p-1"
+                      style={{ 
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#8b5cf6 #374151'
+                      }}
+                    >
+                      {contentTypes.map((type) => (
+                        <button
+                          key={type.value}
+                          onClick={() => setContentType(type.value as ContentType)}
+                          className={`p-4 border-2 rounded-xl text-left transition-all duration-300 min-h-[100px] group ${
+                            contentType === type.value
+                              ? 'border-purple-500 bg-purple-500/20 shadow-lg shadow-purple-500/20'
+                              : 'border-gray-600 bg-gray-700/50 hover:border-purple-500/50 hover:bg-gray-700/70 hover:shadow-lg hover:shadow-purple-500/10'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`p-2 rounded-lg transition-colors ${
+                              contentType === type.value 
+                                ? 'bg-purple-500/20' 
+                                : 'bg-gray-600/50 group-hover:bg-purple-500/10'
+                            }`}>
+                              <type.icon className={`w-5 h-5 ${
+                                contentType === type.value ? 'text-purple-400' : 'text-gray-400 group-hover:text-purple-400'
+                              }`} />
+                            </div>
+                            <div className="flex-1">
+                              <div className={`font-semibold text-sm mb-1 ${
+                                contentType === type.value ? 'text-white' : 'text-gray-300 group-hover:text-white'
+                              }`}>
+                                {type.label}
+                              </div>
+                              <div className={`text-xs ${
+                                contentType === type.value ? 'text-purple-300' : 'text-gray-400 group-hover:text-gray-300'
+                              }`}>
+                                {type.description}
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  {/* Dynamic Content Form */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      {contentTypes.find(t => t.value === contentType)?.label} Details
+                    </label>
+                    {renderContentForm()}
+                  </div>
+
+                  {/* Copy Button */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-400">
+                      {generateContent().length} characters
+                    </span>
                     <button
-                      onClick={() => setText('https://your-website.com')}
-                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-purple-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
+                      onClick={copyToClipboard}
+                      disabled={!generateContent().trim()}
+                      className={`flex items-center gap-2 text-sm ${!generateContent().trim() ? 'opacity-50 cursor-not-allowed text-gray-500' : 'text-gray-300 hover:text-white'}`}
+                      title={!generateContent().trim() ? 'Enter content to enable copy' : ''}
                     >
-                      <div className="font-medium">Website URL</div>
-                      <div className="text-sm text-gray-400">https://...</div>
-                    </button>
-                    
-                    <button
-                      onClick={() => setText('mailto:email@example.com')}
-                      className="text-left p-3 border border-gray-600 rounded-lg hover:border-purple-500/50 transition-colors bg-gray-700/50 text-gray-300 hover:text-white"
-                    >
-                      <div className="font-medium">Email</div>
-                      <div className="text-sm text-gray-400">mailto:...</div>
+                      {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      {copied ? 'Copied!' : 'Copy Content'}
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* Design Tab */}
+              {/* Design Tab - unchanged from previous */}
               {activeTab === 'design' && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -433,7 +1029,7 @@ export default function QRGenerator() {
                 </motion.div>
               )}
 
-              {/* Image Tab */}
+              {/* Image Tab - unchanged from previous */}
               {activeTab === 'image' && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -444,12 +1040,9 @@ export default function QRGenerator() {
                     <div className="text-center">
                       <div
                         className="border-2 border-dashed border-gray-600 rounded-2xl p-8 bg-gray-700/50"
-                        onDragOver={e => e.preventDefault()}
-                        onDrop={e => {
-                          e.preventDefault();
-                          const file = e.dataTransfer.files?.[0];
-                          if (file) handleLogoUpload({ target: { files: [file] } } as unknown as React.ChangeEvent<HTMLInputElement>);
-                        }}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
                       >
                         <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-300 mb-2">Add a logo to your QR code</p>
@@ -553,11 +1146,11 @@ export default function QRGenerator() {
                 <div className="text-center">
                   <motion.button
                     onClick={downloadQR}
-                    disabled={!text.trim()}
+                    disabled={!generateContent().trim()}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className={`inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-95 transition-all duration-300 ${!text.trim() ? 'opacity-40 cursor-not-allowed' : ''}`}
-                    title={!text.trim() ? 'Enter content to enable download' : ''}
+                    className={`inline-flex items-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:opacity-95 transition-all duration-300 ${!generateContent().trim() ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    title={!generateContent().trim() ? 'Enter content to enable download' : ''}
                   >
                     <Download className="w-4 h-4" />
                     Download PNG
@@ -569,6 +1162,10 @@ export default function QRGenerator() {
               <div className="bg-gray-700/50 rounded-xl p-4 border border-gray-600">
                 <h4 className="font-medium text-white mb-3">QR Code Details</h4>
                 <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Content Type:</span>
+                    <span className="font-mono text-white capitalize">{contentType}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-gray-300">Size:</span>
                     <span className="font-mono text-white">{config.width}×{config.height}px</span>
@@ -585,6 +1182,12 @@ export default function QRGenerator() {
                     <span className="text-gray-300">Has Logo:</span>
                     <span className="font-mono text-white">{logoImage ? 'Yes' : 'No'}</span>
                   </div>
+                  {contentType === 'video' && videoData.uploadedVideo && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-300">Video Uploaded:</span>
+                      <span className="font-mono text-white">Yes</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -604,6 +1207,24 @@ export default function QRGenerator() {
           </AnimatePresence>
         </motion.div>
       </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #374151;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #8b5cf6;
+          border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #7c3aed;
+        }
+      `}</style>
     </div>
   );
 }
