@@ -117,8 +117,6 @@
     const [logoImage, setLogoImage] = useState<string>('');
     const [contentType, setContentType] = useState<ContentType>('url');
     const [isDragging, setIsDragging] = useState(false);
-
-    // Advanced content states
     const [emailData, setEmailData] = useState({ address: '', subject: '', body: '' });
     const [phoneData, setPhoneData] = useState({ number: '' });
     const [smsData, setSmsData] = useState({ number: '', message: '' });
