@@ -81,7 +81,6 @@ export default function Home() {
     { number: "0", label: "Cost" }
   ];
 
-  // AccordionItem removed in favor of SimpleAccordionItem (simpler animation)
 
   function SimpleAccordionItem({ faq, index, openFaq, setOpenFaq }: { faq: { question: string; answer: string }; index: number; openFaq: number | null; setOpenFaq: React.Dispatch<React.SetStateAction<number | null>> }) {
     const isOpen = openFaq === index;
