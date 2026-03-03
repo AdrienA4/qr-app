@@ -1,26 +1,41 @@
-'use client';
-import { useState, useRef, useEffect } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Camera, Upload, Scan, Video, Image, 
-  AlertCircle, CheckCircle, Play, Square, Copy,
-  ChevronDown, QrCode
-} from 'lucide-react';
+"use client";
+import { useState, useRef, useEffect } from "react";
+import { BrowserMultiFormatReader } from "@zxing/browser";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  Upload,
+  Scan,
+  Video,
+  Image,
+  AlertCircle,
+  CheckCircle,
+  Play,
+  Square,
+  Copy,
+  ChevronDown,
+  QrCode,
+} from "lucide-react";
 
 export default function QRScanner() {
-  const [scanningMode, setScanningMode] = useState<'camera' | 'image'>('camera');
+  const [scanningMode, setScanningMode] = useState<"camera" | "image">(
+    "camera",
+  );
   const [isDragActive, setIsDragActive] = useState(false);
-  const [selectedDeviceId, setSelectedDeviceId] = useState('');
-  const [videoInputDevices, setVideoInputDevices] = useState<MediaDeviceInfo[]>([]);
-  const [scanResult, setScanResult] = useState('');
+  const [selectedDeviceId, setSelectedDeviceId] = useState("");
+  const [videoInputDevices, setVideoInputDevices] = useState<MediaDeviceInfo[]>(
+    [],
+  );
+  const [scanResult, setScanResult] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [isVideoActive, setIsVideoActive] = useState(false);
-  const [error, setError] = useState('');
-  const [cameraPermission, setCameraPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [error, setError] = useState("");
+  const [cameraPermission, setCameraPermission] = useState<
+    "granted" | "denied" | "prompt"
+  >("prompt");
   const [copied, setCopied] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
@@ -28,20 +43,23 @@ export default function QRScanner() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-  codeReaderRef.current = new BrowserMultiFormatReader();
+    codeReaderRef.current = new BrowserMultiFormatReader();
     checkCameraPermission();
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
       stopScanning();
       stopVideo();
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -50,11 +68,11 @@ export default function QRScanner() {
       event.preventDefault();
       event.stopPropagation();
       setIsDragActive(false);
-      if (scanningMode !== 'image') return;
+      if (scanningMode !== "image") return;
       const files = event.dataTransfer?.files;
       if (files && files.length > 0) {
         const file = files[0];
-        if (file.type.startsWith('image/')) {
+        if (file.type.startsWith("image/")) {
           handleImageFileDrop(file);
         }
       }
@@ -62,7 +80,7 @@ export default function QRScanner() {
 
     const handleDragOver = (event: DragEvent) => {
       event.preventDefault();
-      if (scanningMode === 'image') setIsDragActive(true);
+      if (scanningMode === "image") setIsDragActive(true);
     };
 
     const handleDragLeave = (event: DragEvent) => {
@@ -70,65 +88,76 @@ export default function QRScanner() {
       setIsDragActive(false);
     };
 
-    window.addEventListener('drop', handleDrop);
-    window.addEventListener('dragover', handleDragOver);
-    window.addEventListener('dragleave', handleDragLeave);
-    
+    window.addEventListener("drop", handleDrop);
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("dragleave", handleDragLeave);
+
     return () => {
-      window.removeEventListener('drop', handleDrop);
-      window.removeEventListener('dragover', handleDragOver);
-      window.removeEventListener('dragleave', handleDragLeave);
+      window.removeEventListener("drop", handleDrop);
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("dragleave", handleDragLeave);
     };
   }, [scanningMode]);
 
   const checkCameraPermission = async () => {
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter(device => device.kind === 'videoinput');
+      const videoDevices = devices.filter(
+        (device) => device.kind === "videoinput",
+      );
       setVideoInputDevices(videoDevices);
-      const hasPermission = videoDevices.length > 0 && videoDevices[0].label !== '';
-      setCameraPermission(hasPermission ? 'granted' : 'prompt');
-      
+      const hasPermission =
+        videoDevices.length > 0 && videoDevices[0].label !== "";
+      setCameraPermission(hasPermission ? "granted" : "prompt");
+
       if (videoDevices.length > 0) {
         setSelectedDeviceId(videoDevices[0].deviceId);
       }
     } catch {
-      setCameraPermission('denied');
+      setCameraPermission("denied");
     }
   };
 
-
   const startVideo = async () => {
-  try {
-    setError('');
-    stopVideo();
+    try {
+      setError("");
+      stopVideo();
 
-    const constraints: MediaStreamConstraints = {
-      video: selectedDeviceId
-        ? { deviceId: { exact: selectedDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-        : { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-    };
+      const constraints: MediaStreamConstraints = {
+        video: selectedDeviceId
+          ? {
+              deviceId: { exact: selectedDeviceId },
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            }
+          : {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+      };
 
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
-    streamRef.current = stream;
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
 
-    if (videoRef.current) {
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play().catch(() => {});
-      setIsVideoActive(true);
-      setCameraPermission('granted');
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => {});
+        setIsVideoActive(true);
+        setCameraPermission("granted");
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      setError(
+        "Failed to start camera. Please check permissions or try another device.",
+      );
+      setCameraPermission("denied");
     }
-  } catch (error) {
-    console.error('Camera error:', error);
-    setError('Failed to start camera. Please check permissions or try another device.');    
-    setCameraPermission('denied');
-  }
-};
-
+  };
 
   const stopVideo = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
     if (videoRef.current) videoRef.current.srcObject = null;
@@ -139,8 +168,8 @@ export default function QRScanner() {
     if (!codeReaderRef.current || !selectedDeviceId || !isVideoActive) return;
     try {
       setIsScanning(true);
-      setScanResult('');
-      setError('');
+      setScanResult("");
+      setError("");
       await codeReaderRef.current.decodeFromVideoDevice(
         selectedDeviceId,
         videoRef.current!,
@@ -149,11 +178,12 @@ export default function QRScanner() {
             setScanResult(result.getText());
             stopScanning();
           }
-          if (err && err.name !== 'NotFoundException') console.error('Scan error:', err);
-        }
+          if (err && err.name !== "NotFoundException")
+            console.error("Scan error:", err);
+        },
       );
     } catch {
-      setError('Failed to start scanning.');
+      setError("Failed to start scanning.");
       setIsScanning(false);
     }
   };
@@ -161,10 +191,11 @@ export default function QRScanner() {
   const stopScanning = () => {
     if (codeReaderRef.current) {
       try {
-        // BrowserMultiFormatReader may expose reset(); avoid 'any' by using a local type
-        type ReaderWithReset = BrowserMultiFormatReader & { reset?: () => void };
+        type ReaderWithReset = BrowserMultiFormatReader & {
+          reset?: () => void;
+        };
         const reader = codeReaderRef.current as ReaderWithReset;
-        if (typeof reader.reset === 'function') {
+        if (typeof reader.reset === "function") {
           reader.reset();
         }
       } catch {}
@@ -172,18 +203,22 @@ export default function QRScanner() {
     setIsScanning(false);
   };
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = event.target.files?.[0];
     if (!file || !codeReaderRef.current) return;
     try {
       setIsScanning(true);
-      setScanResult('');
-      setError('');
-      const result = await codeReaderRef.current.decodeFromImageUrl(URL.createObjectURL(file));
+      setScanResult("");
+      setError("");
+      const result = await codeReaderRef.current.decodeFromImageUrl(
+        URL.createObjectURL(file),
+      );
       setScanResult(result.getText());
     } catch {
-      setError('No QR code found in the image. Try another image.');
-      setTimeout(() => setError(''), 3000);
+      setError("No QR code found in the image. Try another image.");
+      setTimeout(() => setError(""), 3000);
     } finally {
       setIsScanning(false);
     }
@@ -192,35 +227,42 @@ export default function QRScanner() {
   const handleImageFileDrop = (file: File) => {
     if (!file || !codeReaderRef.current) return;
     setIsScanning(true);
-    setScanResult('');
-    setError('');
-    codeReaderRef.current.decodeFromImageUrl(URL.createObjectURL(file))
-      .then(result => setScanResult(result.getText()))
+    setScanResult("");
+    setError("");
+    codeReaderRef.current
+      .decodeFromImageUrl(URL.createObjectURL(file))
+      .then((result) => setScanResult(result.getText()))
       .catch(() => {
-        setError('No QR code found in the image. Please try with a different image.');
-        setTimeout(() => setError(''), 3000);
+        setError(
+          "No QR code found in the image. Please try with a different image.",
+        );
+        setTimeout(() => setError(""), 3000);
       })
       .finally(() => setIsScanning(false));
   };
 
   const triggerImageUpload = () => fileInputRef.current?.click();
-  const clearResult = () => { setScanResult(''); setError(''); setCopied(false); };
+  const clearResult = () => {
+    setScanResult("");
+    setError("");
+    setCopied(false);
+  };
   const copyResult = async () => {
     try {
       await navigator.clipboard.writeText(scanResult);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setError('Failed to copy text.');
+      setError("Failed to copy text.");
     }
   };
 
-  const handleModeChange = (mode: 'camera' | 'image') => {
+  const handleModeChange = (mode: "camera" | "image") => {
     setScanningMode(mode);
     clearResult();
-    if (mode === 'camera') {
+    if (mode === "camera") {
       clearResult();
-      startVideo(); 
+      startVideo();
     } else {
       stopScanning();
       stopVideo();
@@ -234,7 +276,9 @@ export default function QRScanner() {
     stopScanning();
   };
 
-  const selectedDevice = videoInputDevices.find(device => device.deviceId === selectedDeviceId);
+  const selectedDevice = videoInputDevices.find(
+    (device) => device.deviceId === selectedDeviceId,
+  );
 
   return (
     <div className="relative w-full max-w-3xl mx-auto px-4">
@@ -246,29 +290,31 @@ export default function QRScanner() {
       >
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
-         <h2><QrCode className="w-8 h-8 text-purple-400" /></h2>
+          <h2>
+            <QrCode className="w-8 h-8 text-purple-400" />
+          </h2>
           <h2 className="text-3xl font-bold text-white">QR Code Scanner</h2>
         </div>
 
         {/* Mode Toggle */}
         <div className="flex gap-4 mb-8">
           <button
-            onClick={() => handleModeChange('camera')}
+            onClick={() => handleModeChange("camera")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              scanningMode === 'camera'
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
+              scanningMode === "camera"
+                ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold"
+                : "bg-white/5 text-white/70 hover:bg-white/10"
             }`}
           >
             <Camera className="w-5 h-5" />
             Camera
           </button>
           <button
-            onClick={() => handleModeChange('image')}
+            onClick={() => handleModeChange("image")}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl transition-all ${
-              scanningMode === 'image'
-                ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold'
-                : 'bg-white/5 text-white/70 hover:bg-white/10'
+              scanningMode === "image"
+                ? "bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold"
+                : "bg-white/5 text-white/70 hover:bg-white/10"
             }`}
           >
             <Image className="w-5 h-5" />
@@ -278,7 +324,7 @@ export default function QRScanner() {
 
         {/* Camera or Upload Section */}
         <AnimatePresence mode="wait">
-          {scanningMode === 'camera' ? (
+          {scanningMode === "camera" ? (
             <motion.div
               key="camera"
               initial={{ opacity: 0, y: 20 }}
@@ -293,7 +339,7 @@ export default function QRScanner() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="w-full bg-white/5 text-white/80 py-3 px-4 rounded-xl flex items-center justify-between"
                 >
-                  <span>{selectedDevice?.label || 'Select Camera'}</span>
+                  <span>{selectedDevice?.label || "Select Camera"}</span>
                   <ChevronDown className="w-5 h-5 text-white/60" />
                 </button>
                 <AnimatePresence>
@@ -323,8 +369,8 @@ export default function QRScanner() {
                 <video ref={videoRef} className="w-full rounded-xl" />
                 {isScanning && (
                   <>
-                      <div className="absolute inset-0 border-2 border-purple-400 rounded-xl animate-pulse" />
-                      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-pulse" />
+                    <div className="absolute inset-0 border-2 border-purple-400 rounded-xl animate-pulse" />
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-transparent via-purple-500 to-transparent animate-pulse" />
                   </>
                 )}
               </div>
@@ -388,15 +434,21 @@ export default function QRScanner() {
               <div
                 onClick={triggerImageUpload}
                 className={`border-2 border-dashed rounded-2xl max-w-2xl mx-auto h-64 flex items-center justify-center cursor-pointer transition-colors duration-300 ${
-                  isDragActive ? 'border-purple-400 bg-purple-500/10' : 'border-white/20 hover:border-purple-400'
+                  isDragActive
+                    ? "border-purple-400 bg-purple-500/10"
+                    : "border-white/20 hover:border-purple-400"
                 }`}
               >
                 <div className="text-center px-6">
                   <Upload className="w-12 h-12 mx-auto mb-4 text-purple-400" />
                   <p className="text-lg font-semibold text-white">
-                    {isDragActive ? 'Drop image here' : 'Drag & drop or click to upload'}
+                    {isDragActive
+                      ? "Drop image here"
+                      : "Drag & drop or click to upload"}
                   </p>
-                  <p className="text-white/70 text-sm mt-1">Supports PNG, JPG, JPEG</p>
+                  <p className="text-white/70 text-sm mt-1">
+                    Supports PNG, JPG, JPEG
+                  </p>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -422,7 +474,9 @@ export default function QRScanner() {
                 <CheckCircle className="w-6 h-6 text-purple-400 mt-1" />
                 <div className="flex-1">
                   <p className="text-white/80 text-sm mb-1">Scan Result:</p>
-                  <p className="text-white font-medium break-words">{scanResult}</p>
+                  <p className="text-white font-medium break-words">
+                    {scanResult}
+                  </p>
                   <div className="flex gap-3 mt-3">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
@@ -431,7 +485,7 @@ export default function QRScanner() {
                       className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                     >
                       <Copy className="w-4 h-4" />
-                      {copied ? 'Copied!' : 'Copy'}
+                      {copied ? "Copied!" : "Copy"}
                     </motion.button>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
